@@ -1,0 +1,149 @@
+baseURL: https://Espresso-Kp.github.io/ # todo: change site url.
+title: Island Gallery # todo: change site name.
+defaultContentLanguage: 'en'
+theme: eternity
+googleAnalytics: '' # todo: set your analytics id.
+
+params:
+#  image: https://island.imgix.net/DSC00546.JPG?compress
+  logo: logo.jpg # todo: add your custom logo to static/
+#  subtitle: ALWAYS EXPLORE # todo: change default subtitle for your website.
+  copyright: All rights reserved. # todo: set your copyright type.
+  author: Kaipeng Wang # todo: set your full name.
+  dontShowSource: true # please, do not do this :)
+  dontShowLogo: true # If you want to hide the logo, this is what you set to true
+
+  portfolio:
+    columns:
+      desktop:
+        nature: 4
+        misc: 3
+        archive: 6
+        film: 3
+        people: 3
+        default: 3
+      mobile:
+        default: 2
+        archive: 2
+        people: 2
+  socials:
+    # todo: change these links.
+    - icon: 'far fa-envelope fa-lg'
+      url: 'mailto:kaipeng.wang@tum.de'
+#      landing: true
+#    - icon: 'fab fa-github fa-lg'
+#      url: 'https://github.com/boratanrikulu/eternity'
+#      landing: true
+    - icon: 'fab fa-instagram fa-lg'
+      url: 'https://www.instagram.com/island.gallery.kp/'
+#    - icon: 'fab fa-linkedin-in fa-lg'
+#      url: 'https://linkedin.bora.sh/in/eternity'
+  homepage: "/misc" # homepage link, mostly same with menu.main[0]
+  specialPages:
+    - misc
+    - archive
+  bypassWelcomePage: false # redirects "/" to "homepage" when it's true.
+  disableWelcomePageBackground: false # disables the background image on the homepage
+  plausible: '' # todo: set your plausible id.
+  disableRadius: false
+  moveIt: false  # Moves Title and Meta info down, only visible when scroll.
+  disableAlwaysResize: false
+
+markup:
+  defaultMarkdownHandler: goldmark
+  goldmark:
+    renderer:
+      unsafe: true
+
+taxonomies:
+  tag: tags
+
+permalinks:
+  work: ":filename/"
+
+menu:
+  main:
+    - name: misc
+      url: /misc/
+      weight: 1
+    - name: film
+      url: /tags/film/
+      weight: 2
+    - name: people
+      url: /tags/people/
+      weight: 2.5
+    - name: nature
+      url: /tags/nature/
+      weight: 3
+    - name: archive
+      url: /tags/archive/
+      weight: 4
+    - name: about
+      url: /about/
+      weight: 5
+
+#  [deployment]
+## By default, files are uploaded in an arbitrary order.
+## Files that match the regular expressions in the "Order" list
+## will be uploaded first, in the listed order.
+#  order = [".jpg$", ".gif$"]
+#
+#
+#  [[deployment.targets]]
+## An arbitrary name for this target.
+#  name = "mydeployment"
+#  # The Go Cloud Development Kit URL to deploy to. Examples:
+#  # GCS; see https://gocloud.dev/howto/blob/#gcs
+#  # URL = "gs://<Bucket Name>"
+#
+#  # S3; see https://gocloud.dev/howto/blob/#s3
+#  # For S3-compatible endpoints, see https://gocloud.dev/howto/blob/#s3-compatible
+#  # URL = "s3://<Bucket Name>?region=<AWS region>"
+#
+#  # Azure Blob Storage; see https://gocloud.dev/howto/blob/#azure
+#  # URL = "azblob://$web"
+#
+#  # You can use a "prefix=" query parameter to target a subfolder of the bucket:
+#  # URL = "gs://<Bucket Name>?prefix=a/subfolder/"
+#
+#  # If you are using a CloudFront CDN, deploy will invalidate the cache as needed.
+#  cloudFrontDistributionID = <ID>
+#
+## Optionally, you can include or exclude specific files.
+## See https://godoc.org/github.com/gobwas/glob#Glob for the glob pattern syntax.
+## If non-empty, the pattern is matched against the local path.
+## All paths are matched against in their filepath.ToSlash form.
+## If exclude is non-empty, and a local or remote file's path matches it, that file is not synced.
+## If include is non-empty, and a local or remote file's path does not match it, that file is not synced.
+## As a result, local files that don't pass the include/exclude filters are not uploaded to remote,
+## and remote files that don't pass the include/exclude filters are not deleted.
+## include = "**.html" # would only include files with ".html" suffix
+## exclude = "**.{jpg, png}" # would exclude files with ".jpg" or ".png" suffix
+#
+#
+## [[deployment.matchers]] configure behavior for files that match the Pattern.
+## See https://golang.org/pkg/regexp/syntax/ for pattern syntax.
+## Pattern searching is stopped on first match.
+#
+## Samples:
+#
+#  [[deployment.matchers]]
+## Cache static assets for 1 year.
+#  pattern = "^.+\\.(js|css|svg|ttf)$"
+#  cacheControl = "max-age=31536000, no-transform, public"
+#  gzip = true
+#
+#  [[deployment.matchers]]
+#  pattern = "^.+\\.(png|jpg)$"
+#  cacheControl = "max-age=31536000, no-transform, public"
+#  gzip = false
+#
+#  [[deployment.matchers]]
+## Set custom content type for /sitemap.xml
+#  pattern = "^sitemap\\.xml$"
+#  contentType = "application/xml"
+#  gzip = true
+#
+#  [[deployment.matchers]]
+#  pattern = "^.+\\.(html|xml|json)$"
+#  gzip = true
