@@ -10,6 +10,6 @@ hideDate: true
 
 <div align="center">
 	<p>
-       You can do anything you want you set your mind to, man.
+       You can do anything you set your mind to, man.
 	</p>
 </div>
