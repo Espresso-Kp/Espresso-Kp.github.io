@@ -72,8 +72,8 @@ menu:
     - name: people
       url: /tags/people/
       weight: 2.5
-    - name: nature
-      url: /tags/nature/
+    - name: city
+      url: /tags/city/
       weight: 3
     - name: archive
       url: /tags/archive/
