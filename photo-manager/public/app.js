@@ -109,6 +109,7 @@ async function uploadPhoto(event) {
     formData.append('category', document.getElementById('uploadCategory').value);
     formData.append('title', document.getElementById('uploadTitle').value);
     formData.append('tags', document.getElementById('uploadTags').value);
+    formData.append('content', document.getElementById('uploadContent').value);
 
     try {
         const response = await fetch('/api/photos', {
@@ -139,6 +140,7 @@ function editPhoto(photoId) {
     document.getElementById('editTitle').value = photo.title || '';
     document.getElementById('editTags').value = photo.tags ? photo.tags.join(', ') : '';
     document.getElementById('editWeight').value = photo.weight || 1;
+    document.getElementById('editContent').value = photo.content || '';
 
     document.getElementById('editModal').style.display = 'flex';
 }
@@ -158,7 +160,8 @@ async function saveEdit(event) {
     const data = {
         title: document.getElementById('editTitle').value,
         tags: document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t),
-        weight: parseInt(document.getElementById('editWeight').value)
+        weight: parseInt(document.getElementById('editWeight').value),
+        content: document.getElementById('editContent').value
     };
 
     try {

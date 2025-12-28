@@ -102,6 +102,12 @@
                         <input type="text" id="uploadTags" placeholder="用逗号分隔，例如：landscape, sunset">
                     </div>
 
+                    <div class="form-group">
+                        <label>文案描述（可选）</label>
+                        <textarea id="uploadContent" rows="4" placeholder="添加照片的描述文案..."></textarea>
+                        <small>支持 Markdown 格式</small>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">上传</button>
                         <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">取消</button>
@@ -128,6 +134,12 @@
                         <label>标签</label>
                         <input type="text" id="editTags" placeholder="用逗号分隔">
                         <small>当前标签会自动填充</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>文案描述（可选）</label>
+                        <textarea id="editContent" rows="4" placeholder="添加照片的描述文案..."></textarea>
+                        <small>支持 Markdown 格式</small>
                     </div>
 
                     <div class="form-group">

@@ -89,7 +89,7 @@ app.get('/api/photos', async (req, res) => {
 // 上传照片
 app.post('/api/photos', upload.single('image'), async (req, res) => {
     try {
-        const { category, title, tags } = req.body;
+        const { category, title, tags, content } = req.body;
         const imageFile = req.file;
 
         if (!imageFile) {
@@ -122,6 +122,7 @@ tags:
 ${allTags.map(t => `  - ${t}`).join('\n')}
 ---
 
+${content || ''}
 `;
 
         await fs.writeFile(mdPath, frontMatter);
@@ -135,6 +136,7 @@ ${allTags.map(t => `  - ${t}`).join('\n')}
                 images: [`${category}/${imageFile.filename}`],
                 title,
                 tags: allTags,
+                content,
                 imagePath: `/assets/images/${category}/${imageFile.filename}`
             }
         });
@@ -148,18 +150,19 @@ ${allTags.map(t => `  - ${t}`).join('\n')}
 app.put('/api/photos/:category/:filename', async (req, res) => {
     try {
         const { category, filename } = req.params;
-        const { title, tags, weight } = req.body;
+        const { title, tags, weight, content } = req.body;
 
         const mdPath = path.join(CONTENT_DIR, category, filename);
-        const content = await fs.readFile(mdPath, 'utf-8');
-        const metadata = parseFrontMatter(content);
+        const fileContent = await fs.readFile(mdPath, 'utf-8');
+        const metadata = parseFrontMatter(fileContent);
 
         // 更新元数据
         const updatedMetadata = {
             ...metadata,
             title: title !== undefined ? title : metadata.title,
             tags: tags !== undefined ? tags : metadata.tags,
-            weight: weight !== undefined ? weight : metadata.weight
+            weight: weight !== undefined ? weight : metadata.weight,
+            content: content !== undefined ? content : metadata.content
         };
 
         const newContent = createFrontMatter(updatedMetadata);
@@ -329,12 +332,18 @@ function parseFrontMatter(content) {
             .map(line => line.replace(/^\s*-\s*/, '').replace(/\s*#.*$/, '').trim());
     }
 
+    // 解析内容（Front Matter 之后的部分）
+    const contentMatch = content.match(/^---\n[\s\S]*?\n---\n+([\s\S]*)/);
+    if (contentMatch) {
+        metadata.content = contentMatch[1].trim();
+    }
+
     return metadata;
 }
 
 // 辅助函数：创建 Front Matter
 function createFrontMatter(metadata) {
-    const { weight, images, title, tags } = metadata;
+    const { weight, images, title, tags, content } = metadata;
 
     return `---
 weight: ${weight || 1}
@@ -345,6 +354,7 @@ tags:
 ${tags.map(tag => `  - ${tag}`).join('\n')}
 ---
 
+${content || ''}
 `;
 }
 
