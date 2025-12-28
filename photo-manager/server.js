@@ -389,6 +389,115 @@ app.post('/api/git/:action', async (req, res) => {
     }
 });
 
+// --- 分类管理 API ---
+
+// 获取所有分类 (基于文件夹)
+app.get('/api/categories', async (req, res) => {
+    try {
+        const files = await fs.readdir(CONTENT_DIR);
+        const categories = [];
+        for (const file of files) {
+            const fullPath = path.join(CONTENT_DIR, file);
+            const stat = await fs.stat(fullPath);
+            if (stat.isDirectory()) {
+                categories.push(file);
+            }
+        }
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 新增分类
+app.post('/api/categories', async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+            return res.status(400).json({ error: '分类名称无效' });
+        }
+
+        const contentCatPath = path.join(CONTENT_DIR, name);
+        const assetsCatPath = path.join(ASSETS_DIR, name);
+
+        await fs.mkdir(contentCatPath, { recursive: true });
+        await fs.mkdir(assetsCatPath, { recursive: true });
+
+        res.json({ success: true, name });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 重命名分类
+app.put('/api/categories/:oldName', async (req, res) => {
+    try {
+        const { oldName } = req.params;
+        const { newName } = req.body;
+
+        if (!newName || !/^[a-zA-Z0-9_-]+$/.test(newName)) {
+            return res.status(400).json({ error: '新分类名称无效' });
+        }
+
+        const oldContentPath = path.join(CONTENT_DIR, oldName);
+        const newContentPath = path.join(CONTENT_DIR, newName);
+        const oldAssetsPath = path.join(ASSETS_DIR, oldName);
+        const newAssetsPath = path.join(ASSETS_DIR, newName);
+
+        // 1. 移动文件夹
+        await fs.rename(oldContentPath, newContentPath);
+        try {
+            await fs.rename(oldAssetsPath, newAssetsPath);
+        } catch (e) {
+            //assets 文件夹可能不存在，如果还没上传过图片
+            await fs.mkdir(newAssetsPath, { recursive: true });
+        }
+
+        // 2. 更新所有 .md 文件中的图片路径和标签
+        const files = await fs.readdir(newContentPath);
+        for (const file of files) {
+            if (!file.endsWith('.md')) continue;
+            const filePath = path.join(newContentPath, file);
+            let content = await fs.readFile(filePath, 'utf-8');
+
+            // 更新图片路径
+            content = content.replace(new RegExp(`- ${oldName}/`, 'g'), `- ${newName}/`);
+            // 更新标签
+            content = content.replace(new RegExp(`- ${oldName}(\\s|\\n|$)`, 'g'), `- ${newName}$1`);
+
+            await fs.writeFile(filePath, content);
+        }
+
+        res.json({ success: true, oldName, newName });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 删除分类
+app.delete('/api/categories/:name', async (req, res) => {
+    try {
+        const { name } = req.params;
+        const catPath = path.join(CONTENT_DIR, name);
+        const assetsPath = path.join(ASSETS_DIR, name);
+
+        // 检查分类是否为空
+        const files = await fs.readdir(catPath);
+        if (files.length > 0) {
+            return res.status(400).json({ error: '分类不为空，无法删除' });
+        }
+
+        await fs.rmdir(catPath);
+        try {
+            await fs.rmdir(assetsPath);
+        } catch (e) { /* ignore assets error */ }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // 辅助函数：解析 Front Matter
 function parseFrontMatter(content) {
     const parts = content.split(/^---\n/m);
@@ -403,11 +512,12 @@ function parseFrontMatter(content) {
     if (weightMatch) metadata.weight = parseInt(weightMatch[1]);
 
     // 解析 title
-    const titleMatch = yaml.match(/title:\s*(.*)/); // 允许空标题
+    const titleMatch = yaml.match(/title:\s*([^\n]*)/); // 允许空标题，确保不跨行
     if (titleMatch) metadata.title = titleMatch[1].trim();
 
     // 解析 images
-    const imagesMatch = yaml.match(/images:\s*\n((?:\s+-\s+.+\n?)+)/);
+    // 允许 0 或多空格后加 -, 且处理行末内容
+    const imagesMatch = yaml.match(/images:\s*\n((?:\s*-.*(?:\n|$))+)/);
     if (imagesMatch) {
         metadata.images = imagesMatch[1]
             .split('\n')
@@ -416,7 +526,7 @@ function parseFrontMatter(content) {
     }
 
     // 解析 tags
-    const tagsMatch = yaml.match(/tags:\s*\n((?:\s+-\s+.+\n?)+)/);
+    const tagsMatch = yaml.match(/tags:\s*\n((?:\s*-.*(?:\n|$))+)/);
     if (tagsMatch) {
         metadata.tags = tagsMatch[1]
             .split('\n')

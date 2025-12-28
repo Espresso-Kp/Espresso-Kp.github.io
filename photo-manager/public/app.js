@@ -1,10 +1,146 @@
 let allPhotos = [];
 let filteredPhotos = [];
 
-// 页面加载时获取照片
+// 页面加载时获取照片和分类
 document.addEventListener('DOMContentLoaded', () => {
     loadPhotos();
+    loadCategories();
 });
+
+// 加载所有分类
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/categories');
+        const categories = await response.json();
+        populateCategorySelects(categories);
+        renderCategoryList(categories);
+        return categories;
+    } catch (error) {
+        console.error('加载分类失败:', error);
+    }
+}
+
+// 填充所有分类下拉框
+function populateCategorySelects(categories) {
+    const selects = ['categoryFilter', 'uploadCategory', 'editCategory'];
+    selects.forEach(id => {
+        const select = document.getElementById(id);
+        const currentValue = select.value;
+
+        // 保留第一个选项 (如果是过滤器)
+        const firstOption = id === 'categoryFilter' ? '<option value="">所有分类</option>' : '';
+
+        select.innerHTML = firstOption + categories.map(cat =>
+            `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</option>`
+        ).join('');
+
+        // 尝试恢复之前选中的值
+        if (currentValue && categories.includes(currentValue)) {
+            select.value = currentValue;
+        }
+    });
+}
+
+// 显示分类管理模态框
+function showCategoryModal() {
+    document.getElementById('categoryModal').style.display = 'flex';
+    loadCategories();
+}
+
+// 关闭分类管理模态框
+function closeCategoryModal() {
+    document.getElementById('categoryModal').style.display = 'none';
+}
+
+// 渲染分类管理列表
+function renderCategoryList(categories) {
+    const list = document.getElementById('categoryList');
+    list.innerHTML = categories.map(cat => `
+        <li class="category-item">
+            <span class="category-name">${cat}</span>
+            <div class="category-item-actions">
+                <button class="btn btn-secondary btn-small" onclick="renameCategory('${cat}')">重命名</button>
+                <button class="btn btn-icon btn-small" onclick="deleteCategory('${cat}')" title="删除">🗑️</button>
+            </div>
+        </li>
+    `).join('');
+}
+
+// 新增分类
+async function addCategory() {
+    const nameInput = document.getElementById('newCategoryName');
+    const name = nameInput.value.trim();
+
+    if (!name) {
+        showError('请输入分类名称');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showSuccess(`分类 "${name}" 创建成功`);
+            nameInput.value = '';
+            loadCategories();
+        } else {
+            showError('创建失败: ' + result.error);
+        }
+    } catch (error) {
+        showError('创建失败: ' + error.message);
+    }
+}
+
+// 重命名分类
+async function renameCategory(oldName) {
+    const newName = prompt(`将分类 "${oldName}" 重命名为:`, oldName);
+    if (!newName || newName === oldName) return;
+
+    try {
+        const response = await fetch(`/api/categories/${oldName}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newName })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showSuccess(`分类已重命名为 "${newName}"`);
+            loadCategories();
+            loadPhotos(); // 分类改变了，文件路径可能也变了，重新加载
+        } else {
+            showError('重命名失败: ' + result.error);
+        }
+    } catch (error) {
+        showError('重命名失败: ' + error.message);
+    }
+}
+
+// 删除分类
+async function deleteCategory(name) {
+    if (!confirm(`确定要删除分类 "${name}" 吗？\n只有空分类才能被删除。`)) return;
+
+    try {
+        const response = await fetch(`/api/categories/${name}`, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showSuccess(`分类 "${name}" 已删除`);
+            loadCategories();
+        } else {
+            showError('删除失败: ' + result.error);
+        }
+    } catch (error) {
+        showError('删除失败: ' + error.message);
+    }
+}
 
 // 加载所有照片
 async function loadPhotos() {
@@ -50,7 +186,7 @@ function renderPhotos() {
         <div class="photo-card" data-id="${photo.id}">
             <div class="photo-image" style="background-image: url('${photo.imagePath}')"></div>
             <div class="photo-info">
-                <div class="photo-title">${photo.title || '无标题'}</div>
+                <div class="photo-title">${photo.title || ''}</div>
                 <div class="photo-meta">
                     <span class="category-badge">${photo.category}</span>
                     ${photo.tags ? photo.tags.slice(0, 3).map(tag =>
@@ -123,11 +259,12 @@ async function uploadPhoto(event) {
     event.preventDefault();
 
     const formData = new FormData();
-    formData.append('image', document.getElementById('imageFile').files[0]);
+    // CRITICAL: Append text fields BEFORE the file so multer can access them in storage.destination
     formData.append('category', document.getElementById('uploadCategory').value);
     formData.append('title', document.getElementById('uploadTitle').value);
     formData.append('tags', document.getElementById('uploadTags').value);
     formData.append('content', document.getElementById('uploadContent').value);
+    formData.append('image', document.getElementById('imageFile').files[0]);
 
     try {
         const response = await fetch('/api/photos', {

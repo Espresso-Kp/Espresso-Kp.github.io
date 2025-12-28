@@ -18,6 +18,9 @@
                 <button class="btn btn-primary" onclick="showUploadModal()">
                     <span>➕</span> 上传照片
                 </button>
+                <button class="btn btn-secondary" onclick="showCategoryModal()">
+                    <span>📁</span> 分类管理
+                </button>
                 <button class="btn btn-secondary" onclick="showGitPanel()">
                     <span>🔄</span> Git 操作
                 </button>
@@ -28,10 +31,7 @@
         <div class="filters">
             <select id="categoryFilter" onchange="filterPhotos()">
                 <option value="">所有分类</option>
-                <option value="nature">Nature</option>
-                <option value="city">City</option>
-                <option value="people">People</option>
-                <option value="misc">Misc</option>
+                <!-- 动态加载 -->
             </select>
             <input type="text" id="searchInput" placeholder="搜索标题或标签..." oninput="filterPhotos()">
             <span class="photo-count">共 <span id="photoCount">0</span> 张照片</span>
@@ -85,10 +85,7 @@
                     <div class="form-group">
                         <label>分类 *</label>
                         <select id="uploadCategory" required>
-                            <option value="nature">Nature</option>
-                            <option value="city">City</option>
-                            <option value="people">People</option>
-                            <option value="misc">Misc</option>
+                            <!-- 动态加载 -->
                         </select>
                     </div>
 
@@ -128,10 +125,7 @@
                     <div class="form-group">
                         <label>分类 *</label>
                         <select id="editCategory" required>
-                            <option value="nature">Nature</option>
-                            <option value="city">City</option>
-                            <option value="people">People</option>
-                            <option value="misc">Misc</option>
+                            <!-- 动态加载 -->
                         </select>
                         <small>修改分类会移动文件到新分类目录</small>
                     </div>
@@ -164,6 +158,26 @@
                         <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 分类管理模态框 -->
+        <div id="categoryModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeCategoryModal()">&times;</span>
+                <h2>📁 分类管理</h2>
+
+                <div class="category-add-section">
+                    <input type="text" id="newCategoryName" placeholder="新分类名称 (例如: car)">
+                    <button class="btn btn-primary" onclick="addCategory()">新建分类</button>
+                </div>
+
+                <div class="category-list-container">
+                    <h3>现有分类</h3>
+                    <ul id="categoryList" class="category-list">
+                        <!-- 动态加载 -->
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
