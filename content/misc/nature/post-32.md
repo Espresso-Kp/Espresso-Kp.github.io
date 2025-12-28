@@ -4,7 +4,7 @@
 
 [//]: # (images:)
 
-[//]: # (  - https://island.imgix.net/2022/DSC03744.jpg)
+[//]: # (  - nature/DSC03744.jpg)
 
 [//]: # (title:)
 

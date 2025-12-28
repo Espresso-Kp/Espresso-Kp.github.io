@@ -4,9 +4,9 @@
 
 [//]: # (images:)
 
-[//]: # (- https://island.imgix.net/2022/DSC03063.jpg)
+[//]: # (- nature/DSC03063.jpg)
 
-[//]: # (- https://island.imgix.net/2022/DSC03064.jpg)
+[//]: # (- nature/DSC03064.jpg)
 
 [//]: # (title: )
 
