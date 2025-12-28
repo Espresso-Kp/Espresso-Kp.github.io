@@ -2,7 +2,7 @@
 weight: 1
 images:
   - city/DSC03372.jpg
-title: This is Vienna
+title: 
 tags:
   - archive
   - city

@@ -51,6 +51,7 @@ app.get('/api/photos', async (req, res) => {
     try {
         const categories = await fs.readdir(CONTENT_DIR);
         const photos = [];
+        console.log(`[API] 正在读取分类: ${categories.join(', ')}`);
 
         for (const category of categories) {
             const categoryPath = path.join(CONTENT_DIR, category);
@@ -59,32 +60,52 @@ app.get('/api/photos', async (req, res) => {
             if (!stat.isDirectory()) continue;
 
             const files = await fs.readdir(categoryPath);
+            console.log(`[API] 分类 ${category} 下发现 ${files.length} 个文件`);
 
             for (const file of files) {
                 if (!file.endsWith('.md')) continue;
 
                 const filePath = path.join(categoryPath, file);
-                const content = await fs.readFile(filePath, 'utf-8');
-                const metadata = parseFrontMatter(content);
+                try {
+                    const content = await fs.readFile(filePath, 'utf-8');
+                    const metadata = parseFrontMatter(content);
 
-                if (metadata.images && metadata.images.length > 0) {
-                    photos.push({
-                        id: `${category}/${file}`,
-                        category,
-                        filename: file,
-                        ...metadata,
-                        imagePath: `/assets/images/${metadata.images[0]}`
-                    });
+                    if (metadata.images && metadata.images.length > 0) {
+                        photos.push({
+                            id: `${category}/${file}`,
+                            category,
+                            filename: file,
+                            ...metadata,
+                            imagePath: `/assets/images/${metadata.images[0]}`
+                        });
+                    }
+                } catch (err) {
+                    console.error(`[API] 解析文件失败: ${filePath}`, err.message);
                 }
             }
         }
 
+        console.log(`[API] 总共加载了 ${photos.length} 张照片`);
         res.json(photos);
     } catch (error) {
         console.error('获取照片列表失败:', error);
         res.status(500).json({ error: error.message });
     }
 });
+
+// 辅助函数：查找下一个可用的 post 编号
+async function getNextPostFilename(category) {
+    const categoryPath = path.join(CONTENT_DIR, category);
+    await fs.mkdir(categoryPath, { recursive: true });
+
+    const files = await fs.readdir(categoryPath);
+    const postNumbers = files
+        .filter(f => f.match(/^post-(\d+)\.md$/))
+        .map(f => parseInt(f.match(/^post-(\d+)\.md$/)[1]));
+
+    const nextNum = postNumbers.length > 0 ? Math.max(...postNumbers) + 1 : 1;
+    return `post-${nextNum}.md`;
+}
 
 // 上传照片
 app.post('/api/photos', upload.single('image'), async (req, res) => {
@@ -96,17 +117,8 @@ app.post('/api/photos', upload.single('image'), async (req, res) => {
             return res.status(400).json({ error: '没有上传图片' });
         }
 
-        // 查找下一个可用的编号
         const categoryPath = path.join(CONTENT_DIR, category);
-        await fs.mkdir(categoryPath, { recursive: true });
-
-        const files = await fs.readdir(categoryPath);
-        const postNumbers = files
-            .filter(f => f.match(/^post-(\d+)\.md$/))
-            .map(f => parseInt(f.match(/^post-(\d+)\.md$/)[1]));
-
-        const nextNum = postNumbers.length > 0 ? Math.max(...postNumbers) + 1 : 1;
-        const mdFilename = `post-${nextNum}.md`;
+        const mdFilename = await getNextPostFilename(category);
         const mdPath = path.join(categoryPath, mdFilename);
 
         // 创建 markdown 文件
@@ -149,10 +161,18 @@ ${content || ''}
 // 更新照片信息
 app.put('/api/photos/:category/:filename', async (req, res) => {
     try {
-        const { category: oldCategory, filename } = req.params;
+        const { category: oldCategory, filename: oldFilename } = req.params;
         const { category: newCategory, title, tags, weight, content } = req.body;
 
-        const oldMdPath = path.join(CONTENT_DIR, oldCategory, filename);
+        const oldMdPath = path.join(CONTENT_DIR, oldCategory, oldFilename);
+
+        // 检查旧文件是否存在
+        try {
+            await fs.access(oldMdPath);
+        } catch (e) {
+            return res.status(404).json({ error: '照片文件不存在' });
+        }
+
         const fileContent = await fs.readFile(oldMdPath, 'utf-8');
         const metadata = parseFrontMatter(fileContent);
 
@@ -168,13 +188,12 @@ app.put('/api/photos/:category/:filename', async (req, res) => {
             content: content !== undefined ? content : metadata.content
         };
 
-        // 如果分类改变，需要移动文件和更新图片路径
         if (categoryChanged) {
-            // 创建新分类目录
-            const newCategoryPath = path.join(CONTENT_DIR, newCategory);
-            await fs.mkdir(newCategoryPath, { recursive: true });
+            // 获取新分类下的可用文件名
+            const newFilename = await getNextPostFilename(newCategory);
+            const newMdPath = path.join(CONTENT_DIR, newCategory, newFilename);
 
-            // 更新图片路径
+            // 移动图片文件并更新元数据中的图片路径
             if (metadata.images && metadata.images.length > 0) {
                 const updatedImages = [];
                 for (const imgPath of metadata.images) {
@@ -182,30 +201,34 @@ app.put('/api/photos/:category/:filename', async (req, res) => {
                     const oldImgPath = path.join(ASSETS_DIR, imgPath);
                     const newImgPath = path.join(ASSETS_DIR, newCategory, imgFilename);
 
-                    // 移动图片文件
                     try {
                         await fs.mkdir(path.join(ASSETS_DIR, newCategory), { recursive: true });
-                        await fs.rename(oldImgPath, newImgPath);
-                        updatedImages.push(`${newCategory}/${imgFilename}`);
+                        // 检查旧图片是否存在
+                        try {
+                            await fs.access(oldImgPath);
+                            await fs.rename(oldImgPath, newImgPath);
+                            updatedImages.push(`${newCategory}/${imgFilename}`);
+                        } catch (e) {
+                            console.warn(`原图片不存在，跳过移动: ${oldImgPath}`);
+                            updatedImages.push(`${newCategory}/${imgFilename}`); // 仍然更新路径
+                        }
                     } catch (err) {
-                        console.warn('移动图片失败:', err.message);
-                        updatedImages.push(imgPath); // 保留原路径
+                        console.warn('操作图片失败:', err.message);
+                        updatedImages.push(imgPath);
                     }
                 }
                 updatedMetadata.images = updatedImages;
             }
 
-            // 更新标签（移除旧分类，添加新分类）
+            // 更新标签
             if (updatedMetadata.tags) {
                 updatedMetadata.tags = updatedMetadata.tags
                     .filter(tag => tag !== oldCategory)
                     .concat(newCategory);
-                // 去重
                 updatedMetadata.tags = [...new Set(updatedMetadata.tags)];
             }
 
             // 写入新位置
-            const newMdPath = path.join(CONTENT_DIR, newCategory, filename);
             const newContent = createFrontMatter(updatedMetadata);
             await fs.writeFile(newMdPath, newContent);
 
@@ -216,8 +239,9 @@ app.put('/api/photos/:category/:filename', async (req, res) => {
                 success: true,
                 photo: {
                     ...updatedMetadata,
-                    id: `${newCategory}/${filename}`,
-                    category: newCategory
+                    id: `${newCategory}/${newFilename}`,
+                    category: newCategory,
+                    filename: newFilename
                 },
                 categoryChanged: true
             });
@@ -242,6 +266,13 @@ app.delete('/api/photos/:category/:filename', async (req, res) => {
 
         const mdPath = path.join(CONTENT_DIR, category, filename);
 
+        // 检查 Markdown 文件是否存在
+        try {
+            await fs.access(mdPath);
+        } catch (e) {
+            return res.status(404).json({ error: '照片文件不存在' });
+        }
+
         // 读取图片路径
         if (deleteImage === 'true') {
             const content = await fs.readFile(mdPath, 'utf-8');
@@ -250,9 +281,10 @@ app.delete('/api/photos/:category/:filename', async (req, res) => {
             if (metadata.images && metadata.images.length > 0) {
                 const imagePath = path.join(ASSETS_DIR, metadata.images[0]);
                 try {
+                    await fs.access(imagePath);
                     await fs.unlink(imagePath);
                 } catch (err) {
-                    console.warn('删除图片文件失败:', err.message);
+                    console.warn('图片文件不存在或无法删除:', err.message);
                 }
             }
         }
@@ -302,7 +334,7 @@ app.post('/api/git/:action', async (req, res) => {
                     await execPromise('git add .', { cwd: REPO_ROOT });
 
                     // 提交
-                    const commitMsg = message || 'Update photos';
+                    const commitMsg = (message || 'Update photos').replace(/"/g, '\\"');
                     const { stdout: commitOutput } = await execPromise(`git commit -m "${commitMsg}"`, { cwd: REPO_ROOT });
 
                     result.output = `✅ 提交成功！\n\n${commitOutput}`;
@@ -359,18 +391,19 @@ app.post('/api/git/:action', async (req, res) => {
 
 // 辅助函数：解析 Front Matter
 function parseFrontMatter(content) {
-    const match = content.match(/^---\n([\s\S]*?)\n---/);
-    if (!match) return {};
+    const parts = content.split(/^---\n/m);
+    if (parts.length < 3) return {};
 
-    const yaml = match[1];
-    const metadata = {};
+    const yaml = parts[1];
+    const body = parts.slice(2).join('---\n'); // 重新连接剩余部分，以防正文中有 ---
+    const metadata = { content: body.trim() };
 
     // 解析 weight
     const weightMatch = yaml.match(/weight:\s*(\d+)/);
     if (weightMatch) metadata.weight = parseInt(weightMatch[1]);
 
     // 解析 title
-    const titleMatch = yaml.match(/title:\s*(.+)/);
+    const titleMatch = yaml.match(/title:\s*(.*)/); // 允许空标题
     if (titleMatch) metadata.title = titleMatch[1].trim();
 
     // 解析 images
@@ -391,12 +424,6 @@ function parseFrontMatter(content) {
             .map(line => line.replace(/^\s*-\s*/, '').replace(/\s*#.*$/, '').trim());
     }
 
-    // 解析内容（Front Matter 之后的部分）
-    const contentMatch = content.match(/^---\n[\s\S]*?\n---\n+([\s\S]*)/);
-    if (contentMatch) {
-        metadata.content = contentMatch[1].trim();
-    }
-
     return metadata;
 }
 
@@ -407,10 +434,10 @@ function createFrontMatter(metadata) {
     return `---
 weight: ${weight || 1}
 images:
-${images.map(img => `  - ${img}`).join('\n')}
+${(images || []).map(img => `  - ${img}`).join('\n')}
 title: ${title || ''}
 tags:
-${tags.map(tag => `  - ${tag}`).join('\n')}
+${(tags || []).map(tag => `  - ${tag}`).join('\n')}
 ---
 
 ${content || ''}

@@ -8,13 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 加载所有照片
 async function loadPhotos() {
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '<div class="loading">⌛ 正在加载照片...</div>';
+
     try {
         const response = await fetch('/api/photos');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
         allPhotos = await response.json();
+
+        if (!Array.isArray(allPhotos)) {
+            console.error('Invalid data received:', allPhotos);
+            allPhotos = [];
+        }
+
         filteredPhotos = allPhotos;
         renderPhotos();
         updatePhotoCount();
     } catch (error) {
+        console.error('Fetch error:', error);
+        grid.innerHTML = `<div class="error-state">❌ 加载照片失败: ${error.message}</div>`;
         showError('加载照片失败: ' + error.message);
     }
 }
@@ -23,8 +36,13 @@ async function loadPhotos() {
 function renderPhotos() {
     const grid = document.getElementById('photoGrid');
 
+    if (!filteredPhotos) {
+        grid.innerHTML = '<div class="error-state">⚠️ 数据加载错误</div>';
+        return;
+    }
+
     if (filteredPhotos.length === 0) {
-        grid.innerHTML = '<div class="empty-state">📷 暂无照片</div>';
+        grid.innerHTML = '<div class="empty-state">📷 暂无照片<br><small>点击右上角"上传照片"开始添加</small></div>';
         return;
     }
 
