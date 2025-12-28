@@ -149,12 +149,15 @@ ${content || ''}
 // 更新照片信息
 app.put('/api/photos/:category/:filename', async (req, res) => {
     try {
-        const { category, filename } = req.params;
-        const { title, tags, weight, content } = req.body;
+        const { category: oldCategory, filename } = req.params;
+        const { category: newCategory, title, tags, weight, content } = req.body;
 
-        const mdPath = path.join(CONTENT_DIR, category, filename);
-        const fileContent = await fs.readFile(mdPath, 'utf-8');
+        const oldMdPath = path.join(CONTENT_DIR, oldCategory, filename);
+        const fileContent = await fs.readFile(oldMdPath, 'utf-8');
         const metadata = parseFrontMatter(fileContent);
+
+        // 检查是否需要移动分类
+        const categoryChanged = newCategory && newCategory !== oldCategory;
 
         // 更新元数据
         const updatedMetadata = {
@@ -165,10 +168,66 @@ app.put('/api/photos/:category/:filename', async (req, res) => {
             content: content !== undefined ? content : metadata.content
         };
 
-        const newContent = createFrontMatter(updatedMetadata);
-        await fs.writeFile(mdPath, newContent);
+        // 如果分类改变，需要移动文件和更新图片路径
+        if (categoryChanged) {
+            // 创建新分类目录
+            const newCategoryPath = path.join(CONTENT_DIR, newCategory);
+            await fs.mkdir(newCategoryPath, { recursive: true });
 
-        res.json({ success: true, photo: updatedMetadata });
+            // 更新图片路径
+            if (metadata.images && metadata.images.length > 0) {
+                const updatedImages = [];
+                for (const imgPath of metadata.images) {
+                    const imgFilename = path.basename(imgPath);
+                    const oldImgPath = path.join(ASSETS_DIR, imgPath);
+                    const newImgPath = path.join(ASSETS_DIR, newCategory, imgFilename);
+
+                    // 移动图片文件
+                    try {
+                        await fs.mkdir(path.join(ASSETS_DIR, newCategory), { recursive: true });
+                        await fs.rename(oldImgPath, newImgPath);
+                        updatedImages.push(`${newCategory}/${imgFilename}`);
+                    } catch (err) {
+                        console.warn('移动图片失败:', err.message);
+                        updatedImages.push(imgPath); // 保留原路径
+                    }
+                }
+                updatedMetadata.images = updatedImages;
+            }
+
+            // 更新标签（移除旧分类，添加新分类）
+            if (updatedMetadata.tags) {
+                updatedMetadata.tags = updatedMetadata.tags
+                    .filter(tag => tag !== oldCategory)
+                    .concat(newCategory);
+                // 去重
+                updatedMetadata.tags = [...new Set(updatedMetadata.tags)];
+            }
+
+            // 写入新位置
+            const newMdPath = path.join(CONTENT_DIR, newCategory, filename);
+            const newContent = createFrontMatter(updatedMetadata);
+            await fs.writeFile(newMdPath, newContent);
+
+            // 删除旧文件
+            await fs.unlink(oldMdPath);
+
+            res.json({
+                success: true,
+                photo: {
+                    ...updatedMetadata,
+                    id: `${newCategory}/${filename}`,
+                    category: newCategory
+                },
+                categoryChanged: true
+            });
+        } else {
+            // 分类未改变，直接更新
+            const newContent = createFrontMatter(updatedMetadata);
+            await fs.writeFile(oldMdPath, newContent);
+
+            res.json({ success: true, photo: updatedMetadata });
+        }
     } catch (error) {
         console.error('更新照片失败:', error);
         res.status(500).json({ error: error.message });

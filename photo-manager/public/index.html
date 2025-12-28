@@ -126,6 +126,17 @@
                     <input type="hidden" id="editPhotoId">
 
                     <div class="form-group">
+                        <label>分类 *</label>
+                        <select id="editCategory" required>
+                            <option value="nature">Nature</option>
+                            <option value="city">City</option>
+                            <option value="people">People</option>
+                            <option value="misc">Misc</option>
+                        </select>
+                        <small>修改分类会移动文件到新分类目录</small>
+                    </div>
+
+                    <div class="form-group">
                         <label>标题</label>
                         <input type="text" id="editTitle">
                     </div>

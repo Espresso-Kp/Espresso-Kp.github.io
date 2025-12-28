@@ -137,6 +137,7 @@ function editPhoto(photoId) {
     if (!photo) return;
 
     document.getElementById('editPhotoId').value = photoId;
+    document.getElementById('editCategory').value = photo.category;
     document.getElementById('editTitle').value = photo.title || '';
     document.getElementById('editTags').value = photo.tags ? photo.tags.join(', ') : '';
     document.getElementById('editWeight').value = photo.weight || 1;
@@ -156,8 +157,10 @@ async function saveEdit(event) {
 
     const photoId = document.getElementById('editPhotoId').value;
     const [category, filename] = photoId.split('/');
+    const newCategory = document.getElementById('editCategory').value;
 
     const data = {
+        category: newCategory,
         title: document.getElementById('editTitle').value,
         tags: document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t),
         weight: parseInt(document.getElementById('editWeight').value),
@@ -174,7 +177,11 @@ async function saveEdit(event) {
         const result = await response.json();
 
         if (result.success) {
-            showSuccess('更新成功！');
+            if (result.categoryChanged) {
+                showSuccess('更新成功！照片已移动到新分类。');
+            } else {
+                showSuccess('更新成功！');
+            }
             closeEditModal();
             loadPhotos();
         } else {
