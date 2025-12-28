@@ -1,0 +1,41 @@
+<!--
+    Returns image by getting from local assets or static directory.
+    Remote images are skipped to avoid fetch errors.
+
+    Example usage;
+        {{/*  $scratch := newScratch */}}
+        {{/*  partial "helpers/get" (dict "scratch" $scratch "row" $row) */}}
+        {{/*  $img := $scratch.Get "img" */}}
+
+    Example usage on Post level;
+        images:
+            - nature/DSC03130.jpg  # from assets/images/
+            - /images/logo.png     # from static/
+ -->
+
+{{ $imgPath := index $.row.images 0 }}
+{{ $img := "" }}
+
+{{ if hasPrefix $imgPath "/" }}
+{{/* Static images from /static directory */}}
+{{ $img = resources.Get (strings.TrimPrefix "/" $imgPath) }}
+{{ else if hasPrefix $imgPath "http" }}
+{{/* Skip remote images to avoid fetch errors */}}
+{{ else }}
+{{/* Images from assets/images directory */}}
+{{ $img = resources.Get (printf "images/%s" $imgPath) }}
+{{ end }}
+
+{{ $.scratch.Set "img" $img }}
+
+{{ if $.row.mainImage }}
+{{ $mainImgPath := $.row.mainImage }}
+{{ if hasPrefix $mainImgPath "/" }}
+{{ $img = resources.Get (strings.TrimPrefix "/" $mainImgPath) }}
+{{ else if hasPrefix $mainImgPath "http" }}
+{{/* Skip remote images */}}
+{{ else }}
+{{ $img = resources.Get (printf "images/%s" $mainImgPath) }}
+{{ end }}
+{{ $.scratch.Set "img" $img }}
+{{ end }}
