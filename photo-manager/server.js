@@ -32,13 +32,13 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
-        
+
         if (mimetype && extname) {
             return cb(null, true);
         }
@@ -55,18 +55,18 @@ app.get('/api/photos', async (req, res) => {
         for (const category of categories) {
             const categoryPath = path.join(CONTENT_DIR, category);
             const stat = await fs.stat(categoryPath);
-            
+
             if (!stat.isDirectory()) continue;
 
             const files = await fs.readdir(categoryPath);
-            
+
             for (const file of files) {
                 if (!file.endsWith('.md')) continue;
-                
+
                 const filePath = path.join(categoryPath, file);
                 const content = await fs.readFile(filePath, 'utf-8');
                 const metadata = parseFrontMatter(content);
-                
+
                 if (metadata.images && metadata.images.length > 0) {
                     photos.push({
                         id: `${category}/${file}`,
@@ -99,12 +99,12 @@ app.post('/api/photos', upload.single('image'), async (req, res) => {
         // 查找下一个可用的编号
         const categoryPath = path.join(CONTENT_DIR, category);
         await fs.mkdir(categoryPath, { recursive: true });
-        
+
         const files = await fs.readdir(categoryPath);
         const postNumbers = files
             .filter(f => f.match(/^post-(\d+)\.md$/))
             .map(f => parseInt(f.match(/^post-(\d+)\.md$/)[1]));
-        
+
         const nextNum = postNumbers.length > 0 ? Math.max(...postNumbers) + 1 : 1;
         const mdFilename = `post-${nextNum}.md`;
         const mdPath = path.join(categoryPath, mdFilename);
@@ -112,7 +112,7 @@ app.post('/api/photos', upload.single('image'), async (req, res) => {
         // 创建 markdown 文件
         const tagList = tags ? tags.split(',').map(t => t.trim()) : [];
         const allTags = ['archive', category, ...tagList];
-        
+
         const frontMatter = `---
 weight: 1
 images:
@@ -149,7 +149,7 @@ app.put('/api/photos/:category/:filename', async (req, res) => {
     try {
         const { category, filename } = req.params;
         const { title, tags, weight } = req.body;
-        
+
         const mdPath = path.join(CONTENT_DIR, category, filename);
         const content = await fs.readFile(mdPath, 'utf-8');
         const metadata = parseFrontMatter(content);
@@ -177,14 +177,14 @@ app.delete('/api/photos/:category/:filename', async (req, res) => {
     try {
         const { category, filename } = req.params;
         const { deleteImage } = req.query;
-        
+
         const mdPath = path.join(CONTENT_DIR, category, filename);
-        
+
         // 读取图片路径
         if (deleteImage === 'true') {
             const content = await fs.readFile(mdPath, 'utf-8');
             const metadata = parseFrontMatter(content);
-            
+
             if (metadata.images && metadata.images.length > 0) {
                 const imagePath = path.join(ASSETS_DIR, metadata.images[0]);
                 try {
@@ -211,25 +211,87 @@ app.post('/api/git/:action', async (req, res) => {
         const { action } = req.params;
         const { message } = req.body;
 
-        let command;
+        let result = { success: true, output: '' };
+
         switch (action) {
             case 'status':
-                command = 'git status --short';
+                try {
+                    const { stdout } = await execPromise('git status --short', { cwd: REPO_ROOT });
+                    result.output = stdout.trim() || '✅ 工作目录干净，没有需要提交的更改';
+                    result.hasChanges = stdout.trim().length > 0;
+                } catch (error) {
+                    result.output = `❌ 检查状态失败: ${error.message}`;
+                    result.success = false;
+                }
                 break;
+
             case 'commit':
-                command = `git add . && git commit -m "${message || 'Update photos'}"`;
+                try {
+                    // 先检查是否有更改
+                    const { stdout: statusOutput } = await execPromise('git status --short', { cwd: REPO_ROOT });
+
+                    if (!statusOutput.trim()) {
+                        result.output = '⚠️ 没有需要提交的更改';
+                        result.success = false;
+                        break;
+                    }
+
+                    // 添加所有更改
+                    await execPromise('git add .', { cwd: REPO_ROOT });
+
+                    // 提交
+                    const commitMsg = message || 'Update photos';
+                    const { stdout: commitOutput } = await execPromise(`git commit -m "${commitMsg}"`, { cwd: REPO_ROOT });
+
+                    result.output = `✅ 提交成功！\n\n${commitOutput}`;
+                } catch (error) {
+                    if (error.message.includes('nothing to commit')) {
+                        result.output = '⚠️ 没有需要提交的更改';
+                        result.success = false;
+                    } else {
+                        result.output = `❌ 提交失败: ${error.message}\n\n${error.stderr || ''}`;
+                        result.success = false;
+                    }
+                }
                 break;
+
             case 'push':
-                command = 'git push origin main';
+                try {
+                    // 先检查是否有未推送的提交
+                    const { stdout: statusOutput } = await execPromise('git status -sb', { cwd: REPO_ROOT });
+
+                    if (statusOutput.includes('ahead 0')) {
+                        result.output = '⚠️ 没有需要推送的提交';
+                        result.success = false;
+                        break;
+                    }
+
+                    // 推送到远程
+                    const { stdout, stderr } = await execPromise('git push origin main', { cwd: REPO_ROOT });
+
+                    result.output = `✅ 推送成功！\n\n${stdout || stderr}\n\n🚀 GitHub Actions 将自动部署网站`;
+                } catch (error) {
+                    if (error.message.includes('Everything up-to-date')) {
+                        result.output = '✅ 远程仓库已是最新';
+                    } else {
+                        result.output = `❌ 推送失败: ${error.message}\n\n${error.stderr || ''}\n\n💡 提示：请检查网络连接和 Git 凭据`;
+                        result.success = false;
+                    }
+                }
                 break;
+
             default:
                 return res.status(400).json({ error: '无效的操作' });
         }
 
-        const { stdout, stderr } = await execPromise(command, { cwd: REPO_ROOT });
-        res.json({ success: true, output: stdout || stderr });
+        res.json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message, output: error.stdout || error.stderr });
+        console.error('Git 操作失败:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            output: `❌ 操作失败: ${error.message}`
+        });
     }
 });
 
@@ -273,7 +335,7 @@ function parseFrontMatter(content) {
 // 辅助函数：创建 Front Matter
 function createFrontMatter(metadata) {
     const { weight, images, title, tags } = metadata;
-    
+
     return `---
 weight: ${weight || 1}
 images:

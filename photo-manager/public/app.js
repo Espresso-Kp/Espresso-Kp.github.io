@@ -218,21 +218,37 @@ function closeGitPanel() {
 }
 
 async function checkGitStatus() {
+    const statusElement = document.getElementById('gitStatus');
+    statusElement.textContent = '检查中...';
+
     try {
         const response = await fetch('/api/git/status', { method: 'POST' });
         const result = await response.json();
-        document.getElementById('gitStatus').textContent = result.output || '工作目录干净';
+
+        statusElement.textContent = result.output;
+
+        // 根据是否有更改显示不同样式
+        if (result.hasChanges) {
+            statusElement.style.color = '#f59e0b'; // 橙色
+        } else {
+            statusElement.style.color = '#10b981'; // 绿色
+        }
     } catch (error) {
-        document.getElementById('gitStatus').textContent = '错误: ' + error.message;
+        statusElement.textContent = '❌ 错误: ' + error.message;
+        statusElement.style.color = '#ef4444'; // 红色
     }
 }
 
 async function gitCommit() {
-    const message = document.getElementById('commitMessage').value;
+    const message = document.getElementById('commitMessage').value.trim();
     if (!message) {
         showError('请输入提交信息');
         return;
     }
+
+    const outputElement = document.getElementById('commitOutput');
+    outputElement.textContent = '提交中...';
+    outputElement.style.color = '#10b981';
 
     try {
         const response = await fetch('/api/git/commit', {
@@ -242,30 +258,46 @@ async function gitCommit() {
         });
 
         const result = await response.json();
-        document.getElementById('commitOutput').textContent = result.output || result.error;
+        outputElement.textContent = result.output;
 
         if (result.success) {
             showSuccess('提交成功！');
-            checkGitStatus();
+            outputElement.style.color = '#10b981';
+            checkGitStatus(); // 刷新状态
+        } else {
+            outputElement.style.color = '#f59e0b';
         }
     } catch (error) {
-        document.getElementById('commitOutput').textContent = '错误: ' + error.message;
+        outputElement.textContent = '❌ 错误: ' + error.message;
+        outputElement.style.color = '#ef4444';
+        showError('提交失败');
     }
 }
 
 async function gitPush() {
-    if (!confirm('确定要推送到 GitHub 吗？')) return;
+    if (!confirm('确定要推送到 GitHub 吗？\n\n推送后 GitHub Actions 将自动部署网站。')) return;
+
+    const outputElement = document.getElementById('pushOutput');
+    outputElement.textContent = '推送中，请稍候...';
+    outputElement.style.color = '#10b981';
 
     try {
         const response = await fetch('/api/git/push', { method: 'POST' });
         const result = await response.json();
-        document.getElementById('pushOutput').textContent = result.output || result.error;
+
+        outputElement.textContent = result.output;
 
         if (result.success) {
-            showSuccess('推送成功！GitHub Actions 将自动部署。');
+            showSuccess('推送成功！');
+            outputElement.style.color = '#10b981';
+            checkGitStatus(); // 刷新状态
+        } else {
+            outputElement.style.color = '#f59e0b';
         }
     } catch (error) {
-        document.getElementById('pushOutput').textContent = '错误: ' + error.message;
+        outputElement.textContent = '❌ 错误: ' + error.message;
+        outputElement.style.color = '#ef4444';
+        showError('推送失败');
     }
 }
 
