@@ -19,7 +19,6 @@ params:
         nature: 4
         misc: 3
         archive: 6
-        film: 3
         people: 3
         default: 3
       mobile:
@@ -66,9 +65,6 @@ menu:
     - name: misc
       url: /misc/
       weight: 1
-    - name: film
-      url: /tags/film/
-      weight: 2
     - name: people
       url: /tags/people/
       weight: 2.5
@@ -147,3 +143,15 @@ menu:
 #  [[deployment.matchers]]
 #  pattern = "^.+\\.(html|xml|json)$"
 #  gzip = true
+# Image Processing Configuration
+imaging:
+  resampleFilter: lanczos
+  quality: 75
+  anchor: smart
+  
+  # EXIF settings
+  exif:
+    includeFields: ""
+    excludeFields: ""
+    disableDate: false
+    disableLatLong: true

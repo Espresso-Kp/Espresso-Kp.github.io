@@ -1,6 +1,6 @@
 ---
 images:
-- https://island.imgix.net/DSC00546.JPG?compress
+- nature/DSC00546.jpg
 title: about
 url: about
 hideTitle: true
