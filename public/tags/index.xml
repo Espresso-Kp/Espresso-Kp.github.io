@@ -1,1 +1,73 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>tags on Island Gallery</title><link>https://Espresso-Kp.github.io/tags/</link><description>Recent content in tags on Island Gallery</description><generator>Hugo -- gohugo.io</generator><language>en</language><atom:link href="https://Espresso-Kp.github.io/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>animal</title><link>https://Espresso-Kp.github.io/tags/animal/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/animal/</guid><description/></item><item><title>archive</title><link>https://Espresso-Kp.github.io/tags/archive/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/archive/</guid><description/></item><item><title>car</title><link>https://Espresso-Kp.github.io/tags/car/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/car/</guid><description/></item><item><title>city</title><link>https://Espresso-Kp.github.io/tags/city/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/city/</guid><description/></item><item><title>misc</title><link>https://Espresso-Kp.github.io/tags/misc/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/misc/</guid><description/></item><item><title>people</title><link>https://Espresso-Kp.github.io/tags/people/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://Espresso-Kp.github.io/tags/people/</guid><description/></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>tags on Island Gallery</title>
+    <link>https://Espresso-Kp.github.io/tags/</link>
+    <description>Recent content in tags on Island Gallery</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language><atom:link href="https://Espresso-Kp.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>animal</title>
+      <link>https://Espresso-Kp.github.io/tags/animal/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/animal/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>archive</title>
+      <link>https://Espresso-Kp.github.io/tags/archive/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/archive/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>car</title>
+      <link>https://Espresso-Kp.github.io/tags/car/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/car/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>city</title>
+      <link>https://Espresso-Kp.github.io/tags/city/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/city/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>misc</title>
+      <link>https://Espresso-Kp.github.io/tags/misc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/misc/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>nature</title>
+      <link>https://Espresso-Kp.github.io/tags/nature/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/nature/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>people</title>
+      <link>https://Espresso-Kp.github.io/tags/people/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://Espresso-Kp.github.io/tags/people/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

@@ -18,23 +18,20 @@
 {{ end }}
 
 {{ $posts := slice }}
-{{ if .ctx.Site.Taxonomies.tags }}
-{{ $posts = index .ctx.Site.Taxonomies.tags .ctx.Params.Title }}
+{{ if .ctx.Pages }}
+{{ $posts = .ctx.Pages }}
+{{ else if .ctx.Site.Taxonomies.tags }}
+{{ $term := index .ctx.Site.Taxonomies.tags .ctx.Params.Title }}
+{{ if $term }}
+{{ $posts = $term.Pages }}
+{{ end }}
 {{ end }}
 
-<!-- UNIFIED SORTING: First by weight (asc), then by Date (desc) -->
-<!-- Note: We use .Page to get the underlying page object from the taxonomy result -->
-{{ $sortedPosts := slice }}
-{{ range $posts }}
-{{ $sortedPosts = $sortedPosts | append .Page }}
-{{ end }}
+<!-- UNIFIED SORTING: First by Date (desc), then by weight (asc) -->
+{{ $posts = $posts.ByDate.Reverse.ByWeight }}
 
-<!-- Sort by Date descending first, then by Weight ascending -->
-<!-- Hugo's sort is not guaranteed to be stable, but ByDate.Reverse.ByWeight is a common pattern -->
-{{ $posts = $sortedPosts.ByDate.Reverse.ByWeight }}
-
-{{ $postsCount := len ($posts) }}
-{{ if lt $postsCount $columnsCount}}
+{{ $postsCount := len $posts }}
+{{ if lt $postsCount $columnsCount }}
 {{ $columnsCount = $postsCount }}
 {{ end }}
 
@@ -44,7 +41,7 @@
 
 {{ $loopCount := 1 }}
 {{ $loopFlag := 0 }}
-{{ range $i, $post := $posts }}
+{{ range $post := $posts }}
 {{ if gt $loopFlag (sub $columnsCount 1) }}
 {{ $loopFlag = 0 }}
 {{ end }}
