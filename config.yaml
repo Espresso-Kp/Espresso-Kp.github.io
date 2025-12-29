@@ -2,6 +2,7 @@ baseURL: https://Espresso-Kp.github.io/ # todo: change site url.
 title: Island Gallery # todo: change site name.
 defaultContentLanguage: 'en'
 theme: eternity
+timeout: 600s
 googleAnalytics: '' # todo: set your analytics id.
 
 params:
