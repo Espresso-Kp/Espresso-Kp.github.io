@@ -18,12 +18,12 @@
 {{ end }}
 
 {{ $posts := slice }}
-{{ if .ctx.Pages }}
-{{ $posts = .ctx.Pages }}
+{{ if .ctx.RegularPages }}
+{{ $posts = .ctx.RegularPages }}
 {{ else if .ctx.Site.Taxonomies.tags }}
 {{ $term := index .ctx.Site.Taxonomies.tags .ctx.Params.Title }}
 {{ if $term }}
-{{ $posts = $term.Pages }}
+{{ $posts = $term.RegularPages }}
 {{ end }}
 {{ end }}
 
@@ -78,7 +78,7 @@
 
 {{ $loopCount := 1 }}
 {{ $loopFlag := 0 }}
-{{ range $i, $post := $posts }}
+{{ range $post := $posts }}
 {{ if gt $loopFlag (sub $mobileColumnsCount 1) }}
 {{ $loopFlag = 0 }}
 {{ end }}
